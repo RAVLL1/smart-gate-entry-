@@ -1,0 +1,90 @@
+#include <Stepper.h>
+#include <Servo.h>
+
+// إعدادات محرك الخطوة (الكاميرا)
+const int stepsPerRevolution = 200;
+const int steps45Deg = 25;
+Stepper cameraStepper(stepsPerRevolution, 8, 9, 10, 11); 
+
+
+Servo gateServo;
+const int servoPin = 4;
+
+// إعدادات اللمبة (آلة التذاكر)
+const int ticketLED = 3;
+
+// إعدادات حساس المسافة (Ultrasonic)
+const int trigPin = 5;
+const int echoPin = 6;
+const int detectionDistance = 50; // تفعيل النظام إذا كانت السيارة على بُعد 50 سم أو أقل
+
+void setup() {
+  Serial.begin(9600);
+  
+  // إعداد المحركات واللمبة
+  cameraStepper.setSpeed(60); 
+  gateServo.attach(servoPin);
+  gateServo.write(0); 
+  pinMode(ticketLED, OUTPUT);
+  
+  // إعداد دبابيس الحساس
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  
+  Serial.println("System Ready. Waiting for a car...");
+}
+
+void loop() {
+  // 1. إرسال نبضة صوتية لقياس المسافة
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  
+  // 2. استقبال النبضة وحساب المسافة
+  long duration = pulseIn(echoPin, HIGH);
+  int distance = duration * 0.034 / 2; // تحويل الزمن إلى مسافة بالسنتيمتر
+  
+  // 3. التحقق من وجود سيارة ضمن النطاق
+  // (نستخدم distance > 0 لتجاهل أي قراءات خاطئة من المحاكي)
+  if (distance > 0 && distance <= detectionDistance) {
+    Serial.print("Car Detected at: ");
+    Serial.print(distance);
+    Serial.println(" cm");
+    
+    // الخطوة 1: مسح المنطقة (الكاميرا)
+    Serial.println("Step 1: Scanning License Plate...");
+    cameraStepper.step(steps45Deg);
+    delay(1000);
+    cameraStepper.step(-steps45Deg * 2);
+    delay(1000);
+    cameraStepper.step(steps45Deg);
+    delay(1000);
+
+    // الخطوة 2: إصدار التذكرة
+    Serial.println("Step 2: Issuing Ticket...");
+    digitalWrite(ticketLED, HIGH);
+    delay(2000);
+    digitalWrite(ticketLED, LOW);
+    Serial.println("Ticket Issued.");
+
+    // الخطوة 3: فتح البوابة
+    Serial.println("Step 3: Opening Gate...");
+    gateServo.write(90);
+    
+    // إبقاء البوابة مفتوحة لمرور السيارة
+    delay(5000); 
+
+    // إغلاق البوابة
+    Serial.println("Closing Gate...");
+    gateServo.write(0);
+    
+    Serial.println("System Ready for next car.\n");
+    
+    // تأخير إضافي لتجنب تفعيل النظام مرة أخرى فوراً إذا كانت السيارة لا تزال تعبر
+    delay(3000); 
+  }
+  
+  delay(100); // تأخير بسيط لاستقرار قراءات الحساس
+}
