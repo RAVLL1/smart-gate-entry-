@@ -11,7 +11,7 @@ The circuit was designed to integrate multiple actuators and sensors to mimic a 
 3. **Ticket Dispenser:** A simple **Red LED** (Pin 3) lights up to simulate the printing and issuing of a parking ticket.
 4. **Gate Mechanism:** A **Micro Servo Motor** (Pin 4) acts as the physical gate barrier, rotating from 0 degrees (closed) to 90 degrees (open).
 
-<img width="100%" alt="Smart Gate Entry Wokwi Simulation" src="image_d9cc95.png" />
+<img width="100%" alt="Smart Gate Entry Wokwi Simulation" src="smart gate entry.png" />
 
 ---
 
